@@ -1,0 +1,228 @@
+
+import streamlit as st
+
+st.set_page_config(
+    page_title="FreeAI Finder",
+    page_icon="🤖",
+    layout="wide"
+)
+
+TOOLS = [
+    {
+        "name": "ChatGPT",
+        "category": "General AI Assistant",
+        "description": "Ask questions, learn concepts, write, brainstorm, and work with files.",
+        "best_for": ["study", "questions", "writing", "coding", "ideas", "general"],
+        "url": "https://chatgpt.com/",
+        "free": "Free plan available",
+        "tags": "chat learning explanations everyday"
+    },
+    {
+        "name": "Google Gemini",
+        "category": "General AI Assistant",
+        "description": "Everyday assistance, learning, brainstorming, and Google ecosystem tasks.",
+        "best_for": ["study", "questions", "writing", "research", "general"],
+        "url": "https://gemini.google.com/",
+        "free": "Free plan available",
+        "tags": "google learning productivity"
+    },
+    {
+        "name": "Claude",
+        "category": "Writing and Coding",
+        "description": "Writing, reviewing text, understanding documents, and coding assistance.",
+        "best_for": ["writing", "coding", "documents", "study"],
+        "url": "https://claude.ai/",
+        "free": "Free plan available",
+        "tags": "essays editing programming code"
+    },
+    {
+        "name": "Perplexity",
+        "category": "Research",
+        "description": "Research questions with web-based answers and citations.",
+        "best_for": ["research", "latest information", "facts", "study"],
+        "url": "https://www.perplexity.ai/",
+        "free": "Free access available",
+        "tags": "sources citations news web search"
+    },
+    {
+        "name": "Canva",
+        "category": "Design",
+        "description": "Create presentations, posters, graphics, and visual designs.",
+        "best_for": ["design", "presentations", "posters", "images"],
+        "url": "https://www.canva.com/",
+        "free": "Free plan available; some AI features are limited",
+        "tags": "slides presentation poster graphics"
+    },
+    {
+        "name": "Google AI Studio",
+        "category": "AI Development",
+        "description": "Experiment with Google's AI models and build AI prototypes.",
+        "best_for": ["coding", "building AI", "developers"],
+        "url": "https://aistudio.google.com/",
+        "free": "No-cost access available; usage limits apply",
+        "tags": "API developer programming chatbot"
+    }
+]
+
+st.title("🤖 FreeAI Finder")
+st.subheader("Find the right AI for your task — without searching everywhere.")
+
+st.markdown(
+    "Tell us what you want to do. FreeAI Finder recommends "
+    "AI websites and gives you direct links to explore them."
+)
+
+st.info(
+    "FreeAI Finder is an AI-tool recommendation assistant. "
+    "Free plans may have usage limits, and some features require payment."
+)
+
+with st.sidebar:
+    st.header("Explore")
+    category = st.selectbox(
+        "Choose a category",
+        [
+            "All categories",
+            "General AI Assistant",
+            "Writing and Coding",
+            "Research",
+            "Design",
+            "AI Development"
+        ]
+    )
+    st.caption("FreeAI Finder | Student project")
+
+st.header("What do you need help with?")
+
+task = st.text_input(
+    "Describe your task",
+    placeholder="Example: I need an AI to make a school presentation"
+)
+
+quick_tasks = {
+    "Study and homework": "Help me study and understand difficult topics",
+    "Write content": "Help me write and improve content",
+    "Research with sources": "Research a topic and show sources",
+    "Create a presentation": "Create a school presentation or poster",
+    "Build an AI app": "Help me build an AI chatbot or application",
+    "Write code": "Help me write and debug programming code"
+}
+
+selected_task = st.selectbox(
+    "Or choose a common task",
+    ["Choose a task"] + list(quick_tasks.keys())
+)
+
+def recommend_tools(text, selected_category):
+    query = text.lower().strip()
+
+    keywords = {
+        "study": ["study", "homework", "learn", "explain", "school", "notes"],
+        "questions": ["question", "answer", "ask", "help"],
+        "writing": ["write", "essay", "story", "grammar", "content", "email"],
+        "coding": ["code", "coding", "program", "debug", "python", "website"],
+        "research": ["research", "sources", "citations", "facts", "latest", "news"],
+        "design": ["design", "poster", "graphic", "logo", "artwork"],
+        "presentations": ["presentation", "slides", "ppt"],
+        "images": ["image", "picture", "visual", "graphics"],
+        "documents": ["document", "pdf", "long text", "summarize"],
+        "building ai": ["build an ai", "ai app", "chatbot", "api", "developer"]
+    }
+
+    matched_intents = []
+    for intent, words in keywords.items():
+        if any(word in query for word in words):
+            matched_intents.append(intent)
+
+    results = []
+
+    for tool in TOOLS:
+        if selected_category != "All categories":
+            if tool["category"] != selected_category:
+                continue
+
+        score = 0
+
+        if not query:
+            score = 1
+        else:
+            for intent in matched_intents:
+                if intent in tool["best_for"]:
+                    score += 3
+
+            combined = (
+                tool["name"] + " " +
+                tool["category"] + " " +
+                tool["description"] + " " +
+                tool["tags"]
+            ).lower()
+
+            for word in query.split():
+                if len(word) > 3 and word in combined:
+                    score += 1
+
+        if score > 0:
+            results.append((score, tool))
+
+    results.sort(key=lambda item: item[0], reverse=True)
+    return [tool for score, tool in results]
+
+if st.button("🔎 Find the best AI websites", type="primary"):
+    chosen_text = task
+
+    if selected_task != "Choose a task":
+        chosen_text = (
+            chosen_text + " " + quick_tasks[selected_task]
+        ).strip()
+
+    if not chosen_text and category == "All categories":
+        st.warning("Describe your task or choose a category.")
+    else:
+        matches = recommend_tools(chosen_text, category)
+
+        if not matches:
+            st.warning(
+                "No strong match found. Try describing your task "
+                "with different words or choose another category."
+            )
+        else:
+            st.session_state["recommendations"] = [
+                tool["name"] for tool in matches
+            ]
+            st.session_state["last_task"] = chosen_text
+
+if "recommendations" in st.session_state:
+    st.header("Recommended AI websites")
+
+    for name in st.session_state["recommendations"]:
+        tool = next(
+            item for item in TOOLS if item["name"] == name
+        )
+
+        with st.container(border=True):
+            st.subheader("✨ " + tool["name"])
+            st.caption(tool["category"])
+            st.write(tool["description"])
+            st.write("**Price:** " + tool["free"])
+            st.link_button(
+                "Open official website ↗",
+                tool["url"],
+                use_container_width=True
+            )
+
+st.divider()
+
+st.subheader("Browse all AI websites")
+
+for tool in TOOLS:
+    with st.expander(tool["name"] + " — " + tool["category"]):
+        st.write(tool["description"])
+        st.write("**Free access:** " + tool["free"])
+        st.markdown("[Visit official website](" + tool["url"] + ")")
+
+st.caption(
+    "FreeAI Finder does not own or control the listed services. "
+    "Check each provider's official website for current prices, "
+    "usage limits, age requirements, and privacy terms. "
+    "Recommendations are based on task keywords, not live performance tests."
+)
